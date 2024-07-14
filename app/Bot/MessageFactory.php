@@ -24,7 +24,11 @@ final class MessageFactory
 
     public function getMessage(): string
     {
-        return str_replace('_', '', $this->message ?? '');
+        $escaped = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+
+        return str($this->message ?? '')
+            ->replace($escaped, collect($escaped)->map(fn($char) => "\\$char")->toArray())
+            ->value();
     }
 
     public function getAttachments(): Collection

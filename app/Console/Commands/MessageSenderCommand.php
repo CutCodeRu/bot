@@ -41,7 +41,7 @@ class MessageSenderCommand extends Command
                 $item->status = DispatchStatus::SENT;
             } catch (Throwable $e) {
                 $item->status = DispatchStatus::FAILED;
-                $item->error = $e->getMessage();
+                $item->errors = $e->getMessage();
             }
 
             $item->save();

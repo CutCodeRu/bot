@@ -68,7 +68,7 @@ class NewsletterSenderCommand extends Command
                     $item->is_active = false;
                 } catch (Throwable $e) {
                     $item->status = DispatchStatus::FAILED;
-                    $item->error = $e->getMessage();
+                    $item->errors = $e->getMessage();
                 }
 
                 $item->save();
