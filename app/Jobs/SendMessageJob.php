@@ -43,7 +43,7 @@ class SendMessageJob implements ShouldQueue
      */
     public function handle(): void
     {
-        if (app()->isLocal()) {
+        if (config('queue.default') !== 'redis' || app()->isLocal()) {
             $this->send();
 
             return;
