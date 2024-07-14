@@ -8,8 +8,8 @@ final readonly class TargetUser
 {
     public function __construct(
         private string $id,
-        private string $first_name,
-        private string $last_name,
+        private ?string $first_name = null,
+        private ?string $last_name = null,
         private ?string $username = null,
     )
     {
@@ -22,17 +22,17 @@ final readonly class TargetUser
 
     public function getFirstName(): string
     {
-        return $this->first_name;
+        return $this->first_name ?? '';
     }
 
     public function getLastName(): string
     {
-        return $this->last_name;
+        return $this->last_name ?? '';
     }
 
-    public function getUsername(): ?string
+    public function getUsername(): string
     {
-        return $this->username;
+        return $this->username ?? '';
     }
 
     public static function fromArray(array $data): self

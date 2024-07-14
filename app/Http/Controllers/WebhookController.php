@@ -25,7 +25,12 @@ class WebhookController extends Controller
                     return;
                 }
 
-                $lock = Cache::lock("webhook_{$bot->getKey()}_{$from->getId()}", app()->isLocal() ? 5 : 120);
+                $spamMode = app()->isLocal() || config('bot.spam_mode', false);
+
+                $lock = Cache::lock(
+                    "webhook_{$bot->getKey()}_{$from->getId()}",
+                    $spamMode ? 1 : 120
+                );
 
                 if (! $lock->get()) {
                     return;
@@ -33,19 +38,21 @@ class WebhookController extends Controller
 
                 $user = User::query()->find($from->getId());
 
-                if ($user !== null) {
+                if (!$spamMode && $user !== null) {
                     return;
                 }
 
-                $user = User::query()->create([
-                    'id' => $from->getId(),
-                    'first_name' => $from->getFirstName(),
-                    'last_name' => $from->getLastName(),
-                    'username' => $from->getUsername(),
-                    'chats' => [
-                        $bot->getKey() => $message->getChat()->getId()
-                    ],
-                ]);
+                if($user === null) {
+                    $user = User::query()->create([
+                        'id' => $from->getId(),
+                        'first_name' => $from->getFirstName() ?? '',
+                        'last_name' => $from->getLastName() ?? '',
+                        'username' => $from->getUsername() ?? '',
+                        'chats' => [
+                            $bot->getKey() => $message->getChat()->getId()
+                        ],
+                    ]);
+                }
 
                 $bus = MessageBus::query()
                     ->whereBelongsTo($bot)

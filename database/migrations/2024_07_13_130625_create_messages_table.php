@@ -24,8 +24,8 @@ return new class extends Migration
 
             $table->string('title');
 
-            $table->integer('delay')->default(0);
-            $table->integer('delay_type')->default(DelayType::SECONDS->value);
+            $table->unsignedTinyInteger('delay')->default(0);
+            $table->unsignedTinyInteger('delay_type')->default(DelayType::SECONDS->value);
             $table->string('delay_at')->nullable();
 
             $table->text('message')->nullable();
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->json('buttons')->nullable();
 
             $table->boolean('is_active')->default(true);
-            $table->integer('position')->default(0);
+            $table->unsignedTinyInteger('position')->default(0);
             $table->timestamps();
         });
     }
