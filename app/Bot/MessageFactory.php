@@ -22,6 +22,11 @@ final class MessageFactory
     {
     }
 
+    public function getRawMessage(): string
+    {
+        return $this->message ?? '';
+    }
+
     public function getMessage(): string
     {
         $escaped = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
@@ -110,7 +115,7 @@ final class MessageFactory
             'bus_id' => $this->getBusId(),
             'position' => $this->getPosition(),
             'user' => $this->getUser()->toArray(),
-            'message' => $this->getMessage(),
+            'message' => $this->getRawMessage(),
             'attachments' => $this->getAttachments()->toArray(),
             'buttons' => $this->getButtons()->toArray(),
         ];
