@@ -23,7 +23,7 @@ class TestMessageCommand extends Command
         $userId = $this->argument('user') ?? text('User id', required: true);
 
         $message = text('Message', required: true);
-        $queue = $this->ask('Queue?', false);
+        $queue = $this->confirm('Queue?');
 
         $msg = new MessageFactory(
             $chatId,

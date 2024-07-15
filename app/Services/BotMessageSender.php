@@ -37,6 +37,8 @@ final class BotMessageSender
         if ($this->message->getAttachments()->isNotEmpty()) {
             $media = new ArrayOfInputMedia();
 
+            logger($this->message->getAttachments()->toArray());
+
             foreach ($this->message->getAttachments() as $attachment) {
                 $mime = $this->storage->mime($attachment);
 
