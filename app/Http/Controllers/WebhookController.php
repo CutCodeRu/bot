@@ -40,6 +40,13 @@ class WebhookController extends Controller
 
                 $user = User::query()->find($from->getId());
 
+                if($user !== null && !isset($user->chats[$bot->getKey()])) {
+                    $user->chats = collect($user->chats)
+                        ->put($bot->getKey(), $message->getChat()->getId())
+                        ->toArray();
+                    $user->save();
+                }
+
                 if($user === null) {
                     $user = User::query()->create([
                         'id' => $from->getId(),
@@ -50,11 +57,6 @@ class WebhookController extends Controller
                             $bot->getKey() => $message->getChat()->getId()
                         ],
                     ]);
-                } else {
-                    $user->chats = collect($user->chats)
-                        ->put($bot->getKey(), $message->getChat()->getId())
-                        ->toArray();
-                    $user->save();
                 }
 
                 $bus = MessageBus::query()
