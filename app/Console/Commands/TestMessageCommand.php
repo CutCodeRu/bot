@@ -6,6 +6,7 @@ use App\Bot\BotCore;
 use App\Bot\Entities\TargetUser;
 use App\Bot\MessageFactory;
 use App\Jobs\SendMessageJob;
+use App\Models\Bot;
 use App\Services\BotMessageSender;
 use App\Services\BotStorage;
 use Illuminate\Console\Command;
@@ -47,7 +48,8 @@ class TestMessageCommand extends Command
             return;
         }
 
-        $core = new BotCore(config('bot.test.token'));
+        $bot = Bot::find($botId);
+        $core = new BotCore($bot->token);
         $sender = new BotMessageSender($core, $msg, new BotStorage());
 
         $sender->send(saveHistory: false, scheduleNext: false);
