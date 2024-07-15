@@ -15,28 +15,32 @@ use Throwable;
 
 class NewsletterSenderCommand extends Command
 {
-    protected $signature = 'app:newsletter-sender';
+    protected $signature = 'app:newsletter-sender {id?}';
 
     public function handle(): int
     {
-        $items = Newsletter::query()
-            ->dispatchNow(withSeconds: false)
-            ->with(['bot', 'newsletterUsers'])
-            ->get();
+        $id = $this->argument('id');
+
+        $items = $id
+            ? Newsletter::query()->whereKey($id)->get()
+            : Newsletter::query()
+                ->dispatchNow(withSeconds: false)
+                ->with(['bot', 'newsletterUsers'])
+                ->get();
 
         $allUsers = User::query()->get();
 
         foreach ($items as $item) {
             $users = $item->newsletterUsers;
 
-            if($users->isEmpty()) {
+            if ($users->isEmpty()) {
                 $users = $allUsers;
             }
 
             $limiter = 0;
 
             foreach ($users as $user) {
-                if($limiter === 20) {
+                if ($limiter === 20) {
                     sleep(1);
                     $limiter = 0;
                 }
@@ -46,7 +50,7 @@ class NewsletterSenderCommand extends Command
                 $core = $bot->getBotCore();
                 $chatId = $user->chats[$bot->getKey()] ?? null;
 
-                if($chatId === null) {
+                if ($chatId === null) {
                     continue;
                 }
 

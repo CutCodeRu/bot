@@ -67,12 +67,14 @@ class NewsletterResource extends ModelResource
                     ->hideOnIndex(),
 
                 File::make('Файлы', 'attachments')
+                    ->hideOnIndex()
                     ->disk('public')
                     ->dir('attachments')
                     ->multiple()
                     ->removable(),
 
                 BelongsToMany::make('Пользователи', 'newsletterUsers', resource: new UserResource())
+                    ->hideOnIndex()
                     ->hint('Если пусто, то всем')
                     ->asyncSearch('username')
                     ->selectMode(),
