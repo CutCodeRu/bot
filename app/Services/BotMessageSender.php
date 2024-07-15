@@ -114,7 +114,7 @@ final class BotMessageSender
             $position,
             $this->message->getUser(),
             $next->message,
-            $next->attachements,
+            $next->attachments,
             $next->buttons,
         ))->withTags();
 

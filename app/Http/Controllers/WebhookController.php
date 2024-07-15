@@ -77,7 +77,7 @@ class WebhookController extends Controller
                     $msg->position,
                     new TargetUser($user->getKey(), $user->first_name, $user->last_name, $user->username),
                     $msg->message,
-                    $msg->attachements ?? collect(),
+                    $msg->attachments ?? collect(),
                     $msg->buttons ?? collect(),
                 ))->withTags();
 
