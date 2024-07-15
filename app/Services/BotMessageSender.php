@@ -6,7 +6,9 @@ namespace App\Services;
 
 use App\Bot\BotCore;
 use App\Bot\Contracts\StorageContract;
+use App\Bot\Enums\DelayType;
 use App\Bot\MessageFactory;
+use App\Jobs\SendMessageJob;
 use App\Models\Message;
 use App\Models\MessageHistory;
 use App\Models\MessageSchedule;
@@ -20,8 +22,7 @@ final class BotMessageSender
         private readonly BotCore $core,
         private MessageFactory $message,
         private readonly StorageContract $storage,
-    )
-    {
+    ) {
     }
 
     public function setMessage(MessageFactory $message): self
@@ -31,27 +32,37 @@ final class BotMessageSender
         return $this;
     }
 
-    public function send(): void
+    public function send(bool $saveHistory = true, bool $scheduleNext = true): void
     {
-        if($this->message->getAttachments()->isNotEmpty()) {
+        if ($this->message->getAttachments()->isNotEmpty()) {
             $media = new ArrayOfInputMedia();
 
             foreach ($this->message->getAttachments() as $attachment) {
-                if(!str_contains($this->storage->mime($attachment), 'image')) {
+                $mime = $this->storage->mime($attachment);
+
+                if (! str_contains($mime, 'image')) {
+                    $this->core->getApi()->sendDocument(
+                        $this->message->getChatId(),
+                        $this->storage->url($attachment),
+                    );
+
                     continue;
                 }
 
                 $media->addItem(new InputMediaPhoto($this->storage->url($attachment)));
             }
 
-            if($media->count()) {
-                $this->core->getApi()->sendMediaGroup($this->message->getChatId(), $media);
+            if ($media->count()) {
+                $this->core->getApi()->sendMediaGroup(
+                    $this->message->getChatId(),
+                    $media
+                );
             }
         }
 
         $keyboard = $this->message->getButtons()->isNotEmpty() ? new InlineKeyboardMarkup(
             [
-                $this->message->getButtons()->toArray()
+                $this->message->getButtons()->toArray(),
             ]
         ) : null;
 
@@ -62,17 +73,21 @@ final class BotMessageSender
             replyMarkup: $keyboard
         );
 
-        MessageHistory::query()->create([
-            'bot_id' => $this->message->getBotId(),
-            'user_id' => $this->message->getUser()->getId(),
-            'payload' => $this->message->toArray()
-        ]);
+        if ($saveHistory) {
+            MessageHistory::query()->create([
+                'bot_id' => $this->message->getBotId(),
+                'user_id' => $this->message->getUser()->getId(),
+                'payload' => $this->message->toArray(),
+            ]);
+        }
 
-        if($this->message->getBusId() === null) {
+        if ($this->message->getBusId() === null) {
             return;
         }
 
-        $this->scheduleNext();
+        if ($scheduleNext) {
+            $this->scheduleNext();
+        }
     }
 
     private function scheduleNext(): void
@@ -103,6 +118,13 @@ final class BotMessageSender
 
         if ($next->delay === 0) {
             $this->setMessage($nextMsg)->send();
+
+            return;
+        }
+
+        if ($next->delay < 60 && $next->delay_type === DelayType::SECONDS) {
+            SendMessageJob::dispatch($nextMsg)
+                ->delay(now()->toImmutable()->addSeconds($next->delay));
 
             return;
         }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Bot\Entities\TargetUser;
+use App\Bot\MessageFactory;
 use App\Jobs\SendMessageJob;
 use App\Models\Bot;
 use App\Models\MessageBus;
@@ -38,10 +40,6 @@ class WebhookController extends Controller
 
                 $user = User::query()->find($from->getId());
 
-                if (!$spamMode && $user !== null) {
-                    return;
-                }
-
                 if($user === null) {
                     $user = User::query()->create([
                         'id' => $from->getId(),
@@ -52,6 +50,11 @@ class WebhookController extends Controller
                             $bot->getKey() => $message->getChat()->getId()
                         ],
                     ]);
+                } else {
+                    $user->chats = collect($user->chats)
+                        ->put($bot->getKey(), $message->getChat()->getId())
+                        ->toArray();
+                    $user->save();
                 }
 
                 $bus = MessageBus::query()
@@ -65,12 +68,18 @@ class WebhookController extends Controller
                     return;
                 }
 
-                SendMessageJob::dispatch(
-                    chatId: $message->getChat()->getId(),
-                    bot: $bot,
-                    user: $user,
-                    message: $msg
-                );
+                $msgFactory = (new MessageFactory(
+                    $message->getChat()->getId(),
+                    $bot->getKey(),
+                    $bus->getKey(),
+                    $msg->position,
+                    new TargetUser($user->getKey(), $user->first_name, $user->last_name, $user->username),
+                    $msg->message,
+                    $msg->attachements ?? collect(),
+                    $msg->buttons ?? collect(),
+                ))->withTags();
+
+                SendMessageJob::dispatch($msgFactory);
             });
 
             $core->getClient()->run();

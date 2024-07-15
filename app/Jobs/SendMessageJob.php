@@ -2,12 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Bot\Entities\TargetUser;
+use App\Bot\BotCore;
 use App\Bot\MessageFactory;
 use App\Models\Bot;
-use App\Models\Message;
-use App\Models\MessageSchedule;
-use App\Models\User;
 use App\Services\BotMessageSender;
 use App\Services\BotStorage;
 use Illuminate\Bus\Queueable;
@@ -21,7 +18,6 @@ class SendMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-
     public $tries = 1;
 
     public $timeout = 10;
@@ -30,12 +26,9 @@ class SendMessageJob implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        private readonly int $chatId,
-        private readonly Bot $bot,
-        private readonly User $user,
-        private readonly Message $message,
+        private MessageFactory $message,
     ) {
-        //
+
     }
 
     /**
@@ -49,7 +42,7 @@ class SendMessageJob implements ShouldQueue
             return;
         }
 
-        Redis::throttle("send_message:{$this->bot->getKey()}")
+        Redis::throttle("send_message:{$this->message->getBotId()}")
             ->block(0)
             ->allow(1)
             ->every(5)
@@ -61,21 +54,9 @@ class SendMessageJob implements ShouldQueue
 
     private function send(): void
     {
-        $core = $this->bot->getBotCore();
+        $bot = Bot::find($this->message->getBotId());
+        $core = new BotCore($bot->token);
 
-        $msg = (new MessageFactory(
-            $this->chatId,
-            $this->bot->getKey(),
-            $this->message->message_bus_id,
-            $this->message->position,
-            new TargetUser(
-                $this->user->getKey(), $this->user->first_name, $this->user->last_name, $this->user->username
-            ),
-            $this->message->message,
-            $this->message->attachements,
-            $this->message->buttons,
-        ))->withTags();
-
-        (new BotMessageSender($core, $msg, new BotStorage()))->send();
+        (new BotMessageSender($core, $this->message, new BotStorage()))->send();
     }
 }
