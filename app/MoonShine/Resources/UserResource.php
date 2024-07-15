@@ -16,11 +16,8 @@ use MoonShine\Fields\Date;
 use MoonShine\Fields\Field;
 use MoonShine\Fields\ID;
 use MoonShine\Fields\Preview;
-use MoonShine\Fields\Relationships\BelongsTo;
 use MoonShine\Fields\Td;
 use MoonShine\Fields\Text;
-use MoonShine\Handlers\ExportHandler;
-use MoonShine\Handlers\ImportHandler;
 use MoonShine\Resources\ModelResource;
 use MoonShine\TypeCasts\ModelCast;
 
@@ -47,10 +44,23 @@ class UserResource extends ModelResource
     {
         return [
             Block::make([
-                ID::make()->sortable(),
-                Text::make('Username'),
-                Text::make('Имя', 'first_name'),
-                Text::make('Фамилия', 'last_name'),
+                ID::make()
+                    ->showOnExport()
+                    ->useOnImport()
+                    ->sortable(),
+
+                Text::make('Username')
+                    ->showOnExport()
+                    ->useOnImport(),
+
+                Text::make('Имя', 'first_name')
+                    ->showOnExport()
+                    ->useOnImport(),
+
+                Text::make('Фамилия', 'last_name')
+                    ->showOnExport()
+                    ->useOnImport(),
+
                 Preview::make('Активный', 'is_active')->boolean(),
 
                 Td::make('История сообщений', function (User $user) {
@@ -105,15 +115,5 @@ class UserResource extends ModelResource
             Text::make('ID'),
             Text::make('Username'),
         ];
-    }
-
-    public function export(): ?ExportHandler
-    {
-        return null;
-    }
-
-    public function import(): ?ImportHandler
-    {
-        return null;
     }
 }
