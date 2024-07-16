@@ -45,7 +45,7 @@ class SendMessageJob implements ShouldQueue
         Redis::throttle("send_message:{$this->message->getBotId()}")
             ->block(0)
             ->allow(1)
-            ->every(5)
+            ->every(20)
             ->then(
                 fn () => $this->send(),
                 fn () => $this->release(2)

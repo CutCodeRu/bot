@@ -23,6 +23,16 @@ class Message extends Model
         'position',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(static function (self $model) {
+            $model->position = $model->messageBus
+                ->messages()
+                ->active()
+                ->count() + 1;
+        });
+    }
+
     protected function casts(): array
     {
         return [

@@ -66,7 +66,7 @@ class NewsletterSenderCommand extends Command
                 ))->withTags();
 
                 try {
-                    (new BotMessageSender($core, $msg, new BotStorage()))->send();
+                    (new BotMessageSender($core, $msg, new BotStorage()))->send(scheduleNext: false);
 
                     $item->status = DispatchStatus::SENT;
                     $item->is_active = false;

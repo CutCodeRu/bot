@@ -37,6 +37,11 @@ class MessageResource extends ModelResource
 
     protected string $title = 'Сообщение';
 
+    public function getActiveActions(): array
+    {
+        return ['view', 'create', 'update', 'delete'];
+    }
+
     /**
      * @return list<MoonShineComponent|Field>
      */
@@ -45,12 +50,6 @@ class MessageResource extends ModelResource
         return [
             Block::make([
                 ID::make()->sortable(),
-
-                Number::make('Позиция', 'position')
-                    ->default(1)
-                    ->step(1)
-                    ->min(1)
-                    ->buttons(),
 
                 BelongsTo::make('Цепочка', 'messageBus', resource: new MessageBusResource())
                     ->hideOnIndex(),

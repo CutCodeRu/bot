@@ -100,7 +100,8 @@ final class BotMessageSender
         $next = Message::query()
             ->active()
             ->where('message_bus_id', $this->message->getBusId())
-            ->where('position', $position)
+            ->where('position', '>=', $position)
+            ->orderBy('position')
             ->first();
 
         if ($next === null) {
