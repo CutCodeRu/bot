@@ -100,7 +100,7 @@ class MessageBusResource extends ModelResource
         if(is_null($this->getItemID()) && MessageBus::query()->where('bot_id', request()->integer('bot_id'))->exists()) {
             throw ValidationException::withMessages([
                 'bot_id' => 'У данного бота уже есть цепочка сообщений',
-            ]);
+            ])->errorBag($this->uriKey());
         }
     }
 
