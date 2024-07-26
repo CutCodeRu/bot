@@ -18,6 +18,7 @@ final class MessageFactory
         private string $message,
         private ?Collection $attachments = null,
         private ?Collection $buttons = null,
+        private bool $event = false,
     )
     {
     }
@@ -31,9 +32,25 @@ final class MessageFactory
     {
         $escaped = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
 
-        return str($this->message ?? '')
+        $message = $this->message ?? '';
+
+        $pattern = '/(\[.*?]\(.*?\))/';
+
+        $escapedMessage = preg_replace_callback(
+            $pattern,
+            static fn ($matches) => 'PLACEHOLDER' . base64_encode($matches[0]) . 'PLACEHOLDER',
+            $message
+        );
+
+        $escapedMessage = str($escapedMessage)
             ->replace($escaped, collect($escaped)->map(fn($char) => "\\$char")->toArray())
             ->value();
+
+        return preg_replace_callback(
+            '/PLACEHOLDER(.*?)PLACEHOLDER/',
+            static fn ($matches) => base64_decode($matches[1]),
+            $escapedMessage
+        );
     }
 
     public function getAttachments(): Collection
@@ -71,6 +88,11 @@ final class MessageFactory
         return $this->position ?? 1;
     }
 
+    public function isEvent(): bool
+    {
+        return $this->event;
+    }
+
     private function parseTags(string $message): string
     {
         return str_replace(
@@ -93,6 +115,13 @@ final class MessageFactory
         return $this;
     }
 
+    public function event(bool $condition = true): self
+    {
+        $this->event = $condition;
+
+        return $this;
+    }
+
     public static function fromArray(array $data): self
     {
         return new self(
@@ -104,6 +133,7 @@ final class MessageFactory
             $data['message'],
             collect($data['attachments']),
             collect($data['buttons']),
+            $data['event']
         );
     }
 
@@ -118,6 +148,7 @@ final class MessageFactory
             'message' => $this->getRawMessage(),
             'attachments' => $this->getAttachments()->toArray(),
             'buttons' => $this->getButtons()->toArray(),
+            'event' => $this->isEvent(),
         ];
     }
 }

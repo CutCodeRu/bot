@@ -39,6 +39,15 @@ class MessageBus extends Model
 
     public function messages(): HasMany
     {
-        return $this->hasMany(Message::class)->orderBy('position');
+        return $this->hasMany(Message::class)
+            ->default()
+            ->orderBy('position');
+    }
+
+    public function eventMessages(): HasMany
+    {
+        return $this->hasMany(Message::class)
+            ->event()
+            ->oldest();
     }
 }

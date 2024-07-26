@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Bot\Enums\DelayType;
+use App\Bot\Enums\MessageType;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ class Message extends Model
 {
     protected $fillable = [
         'message_bus_id',
+        'type',
         'title',
         'message',
         'delay',
@@ -26,10 +28,17 @@ class Message extends Model
     protected static function booted(): void
     {
         static::creating(static function (self $model) {
-            $model->position = $model->messageBus
-                ->messages()
-                ->active()
-                ->count() + 1;
+            if($model->type === MessageType::DEFAULT) {
+                $model->position = $model->messageBus
+                    ->messages()
+                    ->default()
+                    ->active()
+                    ->count() + 1;
+            } else {
+                $model->position = 0;
+                $model->delay_type = 0;
+                $model->delay_at = null;
+            }
         });
     }
 
@@ -40,7 +49,23 @@ class Message extends Model
             'attachments' => 'collection',
             'buttons' => 'collection',
             'delay_type' => DelayType::class,
+            'type' => MessageType::class,
         ];
+    }
+
+    public function isEvent(): bool
+    {
+        return $this->type === MessageType::EVENT;
+    }
+
+    public function scopeDefault(Builder $query): void
+    {
+        $query->where('type', MessageType::DEFAULT);
+    }
+
+    public function scopeEvent(Builder $query): void
+    {
+        $query->where('type', MessageType::EVENT);
     }
 
     public function scopeActive(Builder $query): void

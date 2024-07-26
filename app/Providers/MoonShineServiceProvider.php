@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\MoonShine\Resources\BotResource;
+use App\MoonShine\Resources\EventMessageResource;
 use App\MoonShine\Resources\MessageBusResource;
 use App\MoonShine\Resources\MessageHistoryResource;
 use App\MoonShine\Resources\MessageResource;
@@ -75,6 +76,7 @@ class MoonShineServiceProvider extends MoonShineApplicationServiceProvider
     {
         return [
             new MessageResource(),
+            new EventMessageResource(),
             new MessageHistoryResource(),
             new MessageScheduleResource(),
         ];

@@ -71,6 +71,15 @@ class MessageBusResource extends ModelResource
                             : $table->sortable($this->asyncMethodUrl('reorder', params: ['resourceItem' => $this->getItemID()]))
                     )
                     ->async()
+                    ->creatable(),
+
+
+                HasMany::make('События', 'eventMessages')
+                    ->fields([
+                        ID::make(),
+                        Text::make('Заголовок', 'title'),
+                    ])
+                    ->async()
                     ->creatable()
             ]),
         ];

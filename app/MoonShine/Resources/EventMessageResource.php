@@ -9,7 +9,6 @@ use App\Bot\Enums\MessageType;
 use App\Models\Message;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\Components\FlexibleRender;
-use MoonShine\Components\MoonShineComponent;
 use MoonShine\Decorations\Block;
 use MoonShine\Decorations\Column;
 use MoonShine\Decorations\Grid;
@@ -25,7 +24,6 @@ use MoonShine\Fields\Relationships\BelongsTo;
 use MoonShine\Fields\Switcher;
 use MoonShine\Fields\Td;
 use MoonShine\Fields\Text;
-use MoonShine\Fields\Url;
 use MoonShine\Handlers\ExportHandler;
 use MoonShine\Handlers\ImportHandler;
 use MoonShine\Resources\ModelResource;
@@ -33,11 +31,11 @@ use MoonShine\Resources\ModelResource;
 /**
  * @extends ModelResource<Message>
  */
-class MessageResource extends ModelResource
+class EventMessageResource extends ModelResource
 {
     protected string $model = Message::class;
 
-    protected string $title = 'Сообщение';
+    protected string $title = 'События';
 
     public function getActiveActions(): array
     {
@@ -45,7 +43,7 @@ class MessageResource extends ModelResource
     }
 
     /**
-     * @return list<MoonShineComponent|Field>
+     * @return Field
      */
     public function fields(): array
     {
@@ -63,36 +61,6 @@ class MessageResource extends ModelResource
                 Markdown::make('Сообщение', 'message')
                     ->hideOnIndex()
                     ->hint('Доступные теги: {id},{first_name},{last_name},{username}'),
-
-                Td::make('Задержка', function (Message $message) {
-                    return [
-                        FlexibleRender::make(sprintf('%d (%s)', $message->delay, $message->delay_type->toString())),
-                    ];
-                }),
-
-                Grid::make([
-                    Column::make([
-                        Number::make('Таймер', 'delay')
-                            ->hideOnIndex()
-                            ->hideOnDetail()
-                            ->default(0)
-                            ->hint('Время до отправки сообщения после предыдущего, если 0 то будет отправлено сразу')
-                            ->buttons(),
-                    ])->columnSpan(9),
-                    Column::make([
-                        Enum::make('Ед. таймера', 'delay_type')
-                            ->hideOnIndex()
-                            ->hideOnDetail()
-                            ->attach(DelayType::class),
-                    ])->columnSpan(3),
-                ]),
-
-                Text::make('Точное время отправки', 'delay_at')
-                    ->showWhen('delay_type', DelayType::DAYS->value)
-                    ->hideOnIndex()
-                    ->hideOnDetail()
-                    ->nullable()
-                    ->mask('99:99'),
 
                 Json::make('Кнопки', 'buttons')
                     ->fields([
@@ -116,7 +84,7 @@ class MessageResource extends ModelResource
 
     protected function beforeCreating(Model $item): Model
     {
-        $item->type = MessageType::DEFAULT;
+        $item->type = MessageType::EVENT;
 
         return $item;
     }

@@ -12,6 +12,8 @@ use App\Jobs\SendMessageJob;
 use App\Models\Message;
 use App\Models\MessageHistory;
 use App\Models\MessageSchedule;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
 use TelegramBot\Api\Types\Inline\InlineKeyboardMarkup;
 use TelegramBot\Api\Types\InputMedia\ArrayOfInputMedia;
 use TelegramBot\Api\Types\InputMedia\InputMediaPhoto;
@@ -35,38 +37,47 @@ final class BotMessageSender
     public function send(bool $saveHistory = true, bool $scheduleNext = true): void
     {
         if ($this->message->getAttachments()->isNotEmpty()) {
-            $media = new ArrayOfInputMedia();
+            $attachments = $this->message->getAttachments()->toArray();
 
-            logger($this->message->getAttachments()->toArray());
-
-            foreach ($this->message->getAttachments() as $attachment) {
+            foreach ($attachments as $attachment) {
                 $mime = $this->storage->mime($attachment);
 
                 if (! str_contains($mime, 'image')) {
-                    $this->core->getApi()->sendDocument(
-                        $this->message->getChatId(),
-                        $this->storage->url($attachment),
-                    );
+                    $this->cacheFilesIds([
+                        $this->core->getApi()->sendDocument(
+                            $this->message->getChatId(),
+                            $this->getCachedFile($this->storage->url($attachment)),
+                        ),
+                    ], $attachment, true);
 
                     continue;
                 }
 
-                $media->addItem(new InputMediaPhoto($this->storage->url($attachment)));
-            }
+                $media = new ArrayOfInputMedia();
+                $media->addItem(
+                    new InputMediaPhoto(
+                        $this->getCachedFile($this->storage->url($attachment))
+                    )
+                );
 
-            if ($media->count()) {
-                $this->core->getApi()->sendMediaGroup(
-                    $this->message->getChatId(),
-                    $media
+                $this->cacheFilesIds(
+                    $this->core->getApi()->sendMediaGroup(
+                        $this->message->getChatId(),
+                        $media
+                    ),
+                    $attachment
                 );
             }
         }
 
         $keyboard = $this->message->getButtons()->isNotEmpty() ? new InlineKeyboardMarkup(
             [
-                $this->message->getButtons()->toArray(),
-            ]
+                array_filter(
+                    $this->message->getButtons()->toArray()
+                ),
+            ],
         ) : null;
+
 
         $this->core->getApi()->sendMessage(
             $this->message->getChatId(),
@@ -87,8 +98,35 @@ final class BotMessageSender
             return;
         }
 
+        if ($this->message->isEvent()) {
+            return;
+        }
+
         if ($scheduleNext) {
             $this->scheduleNext();
+        }
+    }
+
+    private function getCachedFile(string $path): string
+    {
+        return cache()->get(File::basename($path), $path);
+    }
+
+    /**
+     * @param  list<\TelegramBot\Api\Types\Message>  $messages
+     * @param  string  $attachment
+     * @param  bool  $document
+     *
+     * @return void
+     */
+    private function cacheFilesIds(array $messages, string $attachment, bool $document = false): void
+    {
+        $ttl = now()->toImmutable()->addDay();
+
+        foreach ($messages as $msg) {
+            $file = $document ? $msg->getDocument() : Arr::last($msg->getPhoto());
+
+            cache()->put(File::basename($attachment), $file->getFileId(), $ttl);
         }
     }
 
@@ -98,6 +136,7 @@ final class BotMessageSender
 
         /** @var Message $nextMsg */
         $next = Message::query()
+            ->default()
             ->active()
             ->where('message_bus_id', $this->message->getBusId())
             ->where('position', '>=', $position)
